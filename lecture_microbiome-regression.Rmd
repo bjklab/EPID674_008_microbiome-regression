@@ -492,7 +492,7 @@ otu_long %>%
   mutate(dummy_variable_shannon = #<<
            rnorm(n = length(shannon), #<<
                  mean = 0, #<<
-                 sd = 0.2) +
+                 sd = 0.2) + #<<
            shannon) %>% #<<
   distinct() -> shannon_summary
 
@@ -650,14 +650,14 @@ shannon_summary %>%
 
 .pull-left[
 
-```{r dist2, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+```{r shannon3mm, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
 
-otu_matrix <- read_rds(
-  "./data/HMP_OTU_table_matrix_stool_nares.rds"
-)
+shannon_summary %>%
+  lm(formula = dummy_variable_shannon ~ shannon + #<<
+       hmpbodysubsite, #<<
+     data = .) %>%
+  summary()
 
-otu_matrix %>%
-  str(vec.len = 2)
 
 ```
 
@@ -666,7 +666,7 @@ otu_matrix %>%
 
 .pull-right[
 
-```{r dist2-out, ref.label="dist2", echo=FALSE, message=FALSE, warning=FALSE}
+```{r shannon3mm-out, ref.label="shannon3mm", echo=FALSE, message=FALSE, warning=FALSE, fig.height=5}
 
 ```
 
@@ -681,15 +681,26 @@ otu_matrix %>%
 
 .pull-left[
 
-```{r dist3, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+```{r pc1, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
 
-otu_matrix <- read_rds(
-  "./data/HMP_OTU_table_matrix_stool_nares.rds"
-)
+otu_tab %>%
+  t() %>%  # TRANSPOSE #<<
+  vegdist(x = ., method = "jaccard") %>% #<<
+  pcoa(D = .) -> pc #<<
 
-otu_matrix %>%
-  t() %>% # TRANSPOSE #<<
-  str(vec.len = 2)
+pc$vectors %>% #<<
+  as_tibble(rownames = "specimen_id") %>% #<<
+  select(specimen_id, Axis.1, Axis.2) %>% #<<
+  left_join(shannon_summary, by = "specimen_id") %>%
+  mutate(dummy_variable_pc = 
+           rnorm(n = length(shannon), #<<
+                 mean = 0, #<<
+                 sd = 0.2) + #<<
+           Axis.1) %>% #<<
+  distinct() -> pc_summary
+
+pc_summary
+
 
 ```
 
@@ -698,7 +709,7 @@ otu_matrix %>%
 
 .pull-right[
 
-```{r dist3-out, ref.label="dist3", echo=FALSE, message=FALSE, warning=FALSE}
+```{r pc1-out, ref.label="pc1", echo=FALSE, message=FALSE, warning=FALSE, fig.height=5}
 
 ```
 
@@ -713,18 +724,18 @@ otu_matrix %>%
 
 .pull-left[
 
-```{r dist4, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+```{r pc2, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
 
-otu_matrix <- read_rds(
-  "./data/HMP_OTU_table_matrix_stool_nares.rds"
-)
+pc_summary %>%
+  qplot(data = .,
+        x = Axis.1, #<<
+        y = dummy_variable_pc, #<<
+        color = hmpbodysubsite, #<<
+        geom = c("point","smooth"),
+        method = "lm") +
+  theme_bw() +
+  theme(legend.position = "bottom")
 
-otu_matrix %>%
-  t() %>% #TRANSPOSE #<<
-  vegdist(x = ., #<<
-          method = "jaccard", #<<
-          binary = TRUE) %>% #<<
-  str(vec.len=2)
 
 ```
 
@@ -733,7 +744,7 @@ otu_matrix %>%
 
 .pull-right[
 
-```{r dist4-out, ref.label="dist4", echo=FALSE, message=FALSE, warning=FALSE}
+```{r pc2-out, ref.label="pc2", echo=FALSE, message=FALSE, warning=FALSE, fig.height=5}
 
 ```
 
@@ -748,19 +759,13 @@ otu_matrix %>%
 
 .pull-left[
 
-```{r dist5, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+```{r pc2m, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
 
-otu_matrix <- read_rds(
-  "./data/HMP_OTU_table_matrix_stool_nares.rds"
-)
+pc_summary %>%
+  lm(formula = dummy_variable_pc ~ Axis.1, #<<
+     data = .) %>%
+  summary()
 
-otu_matrix %>%
-  t() %>% #TRANSPOSE #<<
-  vegdist(x = ., #<<
-          method = "jaccard", #<<
-          binary = TRUE) %>% #<<
-  as.matrix() %>% #<<
-  str(vec.len=2)
 
 ```
 
@@ -769,7 +774,37 @@ otu_matrix %>%
 
 .pull-right[
 
-```{r dist5-out, ref.label="dist5", echo=FALSE, message=FALSE, warning=FALSE}
+```{r pc2m-out, ref.label="pc2m", echo=FALSE, message=FALSE, warning=FALSE, fig.height=5}
+
+```
+
+
+]
+
+
+
+---
+
+# Linear Regression with `lm()`
+
+.pull-left[
+
+```{r pc3m, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+pc_summary %>%
+  lm(formula = dummy_variable_pc ~ Axis.2, #<<
+     data = .) %>%
+  summary()
+
+
+```
+
+
+]
+
+.pull-right[
+
+```{r pc3m-out, ref.label="pc3m", echo=FALSE, message=FALSE, warning=FALSE, fig.height=5}
 
 ```
 
@@ -789,12 +824,6 @@ class: center, middle, inverse
 
 
 ---
-background-image: url(img/legendre_otu_to_dm.png)
-background-size: contain
-
-
-
----
 
 # PERMANOVA with `adonis()`
 
@@ -802,22 +831,12 @@ background-size: contain
 
 ```{r otu11, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
 
-# install.packages("tidyverse") 
-library(tidyverse)
+otu_tab %>%
+  t() %>%  # TRANSPOSE #<<
+  vegdist(x = ., method = "jaccard") -> otu_dist  #<<
 
-# install.packages("vegan")
-library(vegan)
-
-# install.packages("ape")
-library(ape)
-
-
-otu_tab <- read_rds(
-"./data/HMP_OTU_table_matrix_stool_nares.rds"
-)
-
-otu_tab
-
+otu_dist %>%
+  str(vec.len = 2)
 
 ```
 
@@ -827,6 +846,37 @@ otu_tab
 .pull-right[
 
 ```{r otu11-out, ref.label="otu11", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# PERMANOVA with `adonis()`
+
+.pull-left[
+
+```{r otu12, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+labels(otu_dist) %>% #match order from dist #<<
+  enframe(value = "specimen_id") %>%
+  left_join(pc_summary, by = "specimen_id") %>%
+  distinct() -> sorted_summary #<<
+
+sorted_summary
+
+```
+
+
+]
+
+.pull-right[
+
+```{r otu12-out, ref.label="otu12", echo=FALSE, message=FALSE, warning=FALSE}
 
 ```
 
