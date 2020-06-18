@@ -1225,8 +1225,10 @@ otu_dist %&gt;%
 ```r
 *labels(otu_dist) %&gt;% #match order from dist
   enframe(value = &quot;specimen_id&quot;) %&gt;%
+  select(specimen_id) %&gt;%
   left_join(pc_summary, by = &quot;specimen_id&quot;) %&gt;%
-* distinct() -&gt; sorted_summary
+* mutate(dummy_category = Axis.1 &gt; mean(Axis.1)) %&gt;%
+  distinct() -&gt; sorted_summary
 
 sorted_summary
 ```
@@ -1239,20 +1241,20 @@ sorted_summary
 
 ```
 ## # A tibble: 10 x 9
-##     name specimen_id   Axis.1  Axis.2 shannon hmpbodysubsite dummy_variable_…
-##    &lt;int&gt; &lt;chr&gt;          &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt; &lt;chr&gt;                     &lt;dbl&gt;
-##  1     1 700014718   -2.64e-1  0.222     5.58 Stool                      4.10
-##  2     2 700014767    5.16e-1  0.174     2.14 Anterior_nares            14.5 
-##  3     3 700014923    5.05e-1  0.183     2.32 Anterior_nares            14.6 
-##  4     4 700016920    3.50e-3 -0.434     4.96 Anterior_nares            14.6 
-##  5     5 700023706   -8.28e-4 -0.290     4.98 Anterior_nares            14.4 
-##  6     6 700038343   -1.54e-3 -0.435     5.56 Anterior_nares            13.7 
-##  7     7 700095956   -2.22e-1  0.189     4.86 Stool                      4.65
-##  8     8 700105834   -2.25e-1  0.174     4.58 Stool                      5.36
-##  9     9 700107189   -9.78e-2  0.0363    4.27 Stool                      4.62
-## 10    10 700109383   -2.13e-1  0.180     4.44 Stool                      4.78
-## # … with 2 more variables: dummy_variable_shannon &lt;dbl&gt;,
-## #   dummy_variable_pc &lt;dbl&gt;
+##    specimen_id   Axis.1  Axis.2 shannon hmpbodysubsite dummy_variable_…
+##    &lt;chr&gt;          &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt; &lt;chr&gt;                     &lt;dbl&gt;
+##  1 700014718   -2.64e-1  0.222     5.58 Stool                      4.10
+##  2 700014767    5.16e-1  0.174     2.14 Anterior_nares            14.5 
+##  3 700014923    5.05e-1  0.183     2.32 Anterior_nares            14.6 
+##  4 700016920    3.50e-3 -0.434     4.96 Anterior_nares            14.6 
+##  5 700023706   -8.28e-4 -0.290     4.98 Anterior_nares            14.4 
+##  6 700038343   -1.54e-3 -0.435     5.56 Anterior_nares            13.7 
+##  7 700095956   -2.22e-1  0.189     4.86 Stool                      4.65
+##  8 700105834   -2.25e-1  0.174     4.58 Stool                      5.36
+##  9 700107189   -9.78e-2  0.0363    4.27 Stool                      4.62
+## 10 700109383   -2.13e-1  0.180     4.44 Stool                      4.78
+## # … with 3 more variables: dummy_variable_shannon &lt;dbl&gt;,
+## #   dummy_variable_pc &lt;dbl&gt;, dummy_category &lt;lgl&gt;
 ```
 
 
@@ -1264,29 +1266,31 @@ sorted_summary
 
 # PERMANOVA with `adonis()`
 
-.pull-left[
+.pad-left[
 
 
 ```r
-otu_matrix &lt;- read_rds(
-  &quot;./data/HMP_OTU_table_matrix_stool_nares.rds&quot;
-)
-
-otu_matrix %&gt;%
-  str(vec.len = 2)
+*# distance matrix is response variable
+*adonis(otu_dist ~ hmpbodysubsite,
+*      data = sorted_summary)
 ```
 
-
-]
-
-.pull-right[
-
-
 ```
-##  num [1:43140, 1:10] 0 0 0 0 0 ...
-##  - attr(*, &quot;dimnames&quot;)=List of 2
-##   ..$ : chr [1:43140] &quot;OTU_97.1&quot; &quot;OTU_97.10&quot; ...
-##   ..$ : chr [1:10] &quot;700014718&quot; &quot;700014767&quot; ...
+## 
+## Call:
+## adonis(formula = otu_dist ~ hmpbodysubsite, data = sorted_summary) 
+## 
+## Permutation: free
+## Number of permutations: 999
+## 
+## Terms added sequentially (first to last)
+## 
+##                Df SumsOfSqs MeanSqs F.Model      R2 Pr(&gt;F)  
+## hmpbodysubsite  1    0.7036 0.70364  1.5719 0.16422  0.014 *
+## Residuals       8    3.5811 0.44764         0.83578         
+## Total           9    4.2847                 1.00000         
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ```
 
 
@@ -1298,30 +1302,32 @@ otu_matrix %&gt;%
 
 # PERMANOVA with `adonis()`
 
-.pull-left[
+.pad-left[
 
 
 ```r
-otu_matrix &lt;- read_rds(
-  &quot;./data/HMP_OTU_table_matrix_stool_nares.rds&quot;
-)
-
-otu_matrix %&gt;%
-* t() %&gt;% # TRANSPOSE
-  str(vec.len = 2)
+*# multivariable possible...
+*adonis(otu_dist ~ hmpbodysubsite + dummy_category,
+*      data = sorted_summary)
 ```
 
-
-]
-
-.pull-right[
-
-
 ```
-##  num [1:10, 1:43140] 0 0 0 0 0 ...
-##  - attr(*, &quot;dimnames&quot;)=List of 2
-##   ..$ : chr [1:10] &quot;700014718&quot; &quot;700014767&quot; ...
-##   ..$ : chr [1:43140] &quot;OTU_97.1&quot; &quot;OTU_97.10&quot; ...
+## 
+## Call:
+## adonis(formula = otu_dist ~ hmpbodysubsite + dummy_category,      data = sorted_summary) 
+## 
+## Permutation: free
+## Number of permutations: 999
+## 
+## Terms added sequentially (first to last)
+## 
+##                Df SumsOfSqs MeanSqs F.Model      R2 Pr(&gt;F)   
+## hmpbodysubsite  1    0.7036 0.70364  1.6100 0.16422  0.002 **
+## dummy_category  1    0.5218 0.52180  1.1939 0.12178  0.125   
+## Residuals       7    3.0593 0.43704         0.71400          
+## Total           9    4.2847                 1.00000          
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ```
 
 
@@ -1333,40 +1339,71 @@ otu_matrix %&gt;%
 
 # PERMANOVA with `adonis()`
 
-.pull-left[
+.pad-left[
 
 
 ```r
-otu_matrix &lt;- read_rds(
-  &quot;./data/HMP_OTU_table_matrix_stool_nares.rds&quot;
-)
+*# ... but order matters!!!
+*adonis(otu_dist ~ dummy_category + hmpbodysubsite,
+*      data = sorted_summary)
+```
 
-otu_matrix %&gt;%
-* t() %&gt;% #TRANSPOSE
-* vegdist(x = .,
-*         method = &quot;jaccard&quot;,
-*         binary = TRUE) %&gt;%
-  str(vec.len=2)
+```
+## 
+## Call:
+## adonis(formula = otu_dist ~ dummy_category + hmpbodysubsite,      data = sorted_summary) 
+## 
+## Permutation: free
+## Number of permutations: 999
+## 
+## Terms added sequentially (first to last)
+## 
+##                Df SumsOfSqs MeanSqs F.Model      R2 Pr(&gt;F)  
+## dummy_category  1    0.6329 0.63293  1.4482 0.14772  0.018 *
+## hmpbodysubsite  1    0.5925 0.59251  1.3557 0.13828  0.036 *
+## Residuals       7    3.0593 0.43704         0.71400         
+## Total           9    4.2847                 1.00000         
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+```
+
+]
+
+
+---
+
+# PERMANOVA with `adonis()`
+
+.pad-left[
+
+
+```r
+*# ... do you mean strata?
+*adonis(otu_dist ~ dummy_category,
+*      strata = sorted_summary$hmpbodysubsite,
+*      data = sorted_summary)
+```
+
+```
+## 
+## Call:
+## adonis(formula = otu_dist ~ dummy_category, data = sorted_summary,      strata = sorted_summary$hmpbodysubsite) 
+## 
+## Blocks:  strata 
+## Permutation: free
+## Number of permutations: 999
+## 
+## Terms added sequentially (first to last)
+## 
+##                Df SumsOfSqs MeanSqs F.Model      R2 Pr(&gt;F)
+## dummy_category  1    0.6329 0.63293  1.3865 0.14772  0.291
+## Residuals       8    3.6518 0.45648         0.85228       
+## Total           9    4.2847                 1.00000
 ```
 
 
 ]
 
-.pull-right[
-
-
-```
-##  &#39;dist&#39; num [1:45] 1 0.982 ...
-##  - attr(*, &quot;Size&quot;)= int 10
-##  - attr(*, &quot;Labels&quot;)= chr [1:10] &quot;700014718&quot; &quot;700014767&quot; ...
-##  - attr(*, &quot;Diag&quot;)= logi FALSE
-##  - attr(*, &quot;Upper&quot;)= logi FALSE
-##  - attr(*, &quot;method&quot;)= chr &quot;binary jaccard&quot;
-##  - attr(*, &quot;call&quot;)= language vegdist(x = ., method = &quot;jaccard&quot;, binary = TRUE)
-```
-
-
-]
 
 
 
@@ -1374,38 +1411,67 @@ otu_matrix %&gt;%
 
 # PERMANOVA with `adonis()`
 
-.pull-left[
+.pad-left[
 
 
 ```r
-otu_matrix &lt;- read_rds(
-  &quot;./data/HMP_OTU_table_matrix_stool_nares.rds&quot;
-)
-
-otu_matrix %&gt;%
-* t() %&gt;% #TRANSPOSE
-* vegdist(x = .,
-*         method = &quot;jaccard&quot;,
-*         binary = TRUE) %&gt;%
-* as.matrix() %&gt;%
-  str(vec.len=2)
+*# ... or do you mean nestedness?
+*adonis(otu_dist ~ dummy_category / hmpbodysubsite,
+*      data = sorted_summary)
 ```
 
+```
+## 
+## Call:
+## adonis(formula = otu_dist ~ dummy_category/hmpbodysubsite, data = sorted_summary) 
+## 
+## Permutation: free
+## Number of permutations: 999
+## 
+## Terms added sequentially (first to last)
+## 
+##                               Df SumsOfSqs MeanSqs F.Model      R2 Pr(&gt;F)   
+## dummy_category                 1    0.6329 0.63293  1.4482 0.14772  0.009 **
+## dummy_category:hmpbodysubsite  1    0.5925 0.59251  1.3557 0.13828  0.023 * 
+## Residuals                      7    3.0593 0.43704         0.71400          
+## Total                          9    4.2847                 1.00000          
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+```
 
 ]
 
-.pull-right[
+
+---
+background-image: url(svg/geompoint.svg)
+background-size: 500px
+background-position: 85% 50%
+class: center, middle, inverse
+
+# Regression &amp; Compositional Data?
 
 
-```
-##  num [1:10, 1:10] 0 1 ...
-##  - attr(*, &quot;dimnames&quot;)=List of 2
-##   ..$ : chr [1:10] &quot;700014718&quot; &quot;700014767&quot; ...
-##   ..$ : chr [1:10] &quot;700014718&quot; &quot;700014767&quot; ...
-```
 
+---
+
+# Regression &amp; Compositional Data?
+
+.pad-left[
+
+- Compositional data approaches correct OTU dependency:
+
+    - e.g., `compositions::clr()` or `philr::philr()`
+
+    - p &gt;&gt; n challenges persist
+
+- Must pair compositional transform with regularization:
+
+    - `glmnet::glmnet` for LASSO/ridge/elastic net
+
+    - Bayesian methods
 
 ]
+
 
 
 ---

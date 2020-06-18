@@ -864,8 +864,10 @@ otu_dist %>%
 
 labels(otu_dist) %>% #match order from dist #<<
   enframe(value = "specimen_id") %>%
+  select(specimen_id) %>%
   left_join(pc_summary, by = "specimen_id") %>%
-  distinct() -> sorted_summary #<<
+  mutate(dummy_category = Axis.1 > mean(Axis.1)) %>% #<<
+  distinct() -> sorted_summary
 
 sorted_summary
 
@@ -889,25 +891,15 @@ sorted_summary
 
 # PERMANOVA with `adonis()`
 
-.pull-left[
+.pad-left[
 
-```{r dist12, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+```{r adonis13, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
 
-otu_matrix <- read_rds(
-  "./data/HMP_OTU_table_matrix_stool_nares.rds"
-)
-
-otu_matrix %>%
-  str(vec.len = 2)
-
-```
+# distance matrix is response variable #<<
+adonis(otu_dist ~ hmpbodysubsite, #<<
+       data = sorted_summary) #<<
 
 
-]
-
-.pull-right[
-
-```{r dist12-out, ref.label="dist12", echo=FALSE, message=FALSE, warning=FALSE}
 
 ```
 
@@ -920,26 +912,15 @@ otu_matrix %>%
 
 # PERMANOVA with `adonis()`
 
-.pull-left[
+.pad-left[
 
-```{r dist13, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+```{r adonis14, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
 
-otu_matrix <- read_rds(
-  "./data/HMP_OTU_table_matrix_stool_nares.rds"
-)
-
-otu_matrix %>%
-  t() %>% # TRANSPOSE #<<
-  str(vec.len = 2)
-
-```
+# multivariable possible... #<<
+adonis(otu_dist ~ hmpbodysubsite + dummy_category, #<<
+       data = sorted_summary) #<<
 
 
-]
-
-.pull-right[
-
-```{r dist13-out, ref.label="dist13", echo=FALSE, message=FALSE, warning=FALSE}
 
 ```
 
@@ -952,34 +933,41 @@ otu_matrix %>%
 
 # PERMANOVA with `adonis()`
 
-.pull-left[
+.pad-left[
 
-```{r dist14, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+```{r adonis15, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
 
-otu_matrix <- read_rds(
-  "./data/HMP_OTU_table_matrix_stool_nares.rds"
-)
+# ... but order matters!!! #<<
+adonis(otu_dist ~ dummy_category + hmpbodysubsite, #<<
+       data = sorted_summary) #<<
 
-otu_matrix %>%
-  t() %>% #TRANSPOSE #<<
-  vegdist(x = ., #<<
-          method = "jaccard", #<<
-          binary = TRUE) %>% #<<
-  str(vec.len=2)
+
+
+```
+
+]
+
+
+---
+
+# PERMANOVA with `adonis()`
+
+.pad-left[
+
+```{r adonis16, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+
+# ... do you mean strata? #<<
+adonis(otu_dist ~ dummy_category, #<<
+       strata = sorted_summary$hmpbodysubsite, #<<
+       data = sorted_summary) #<<
+
+
 
 ```
 
 
 ]
 
-.pull-right[
-
-```{r dist14-out, ref.label="dist14", echo=FALSE, message=FALSE, warning=FALSE}
-
-```
-
-
-]
 
 
 
@@ -987,35 +975,51 @@ otu_matrix %>%
 
 # PERMANOVA with `adonis()`
 
-.pull-left[
+.pad-left[
 
-```{r dist15, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+```{r adonis17, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
 
-otu_matrix <- read_rds(
-  "./data/HMP_OTU_table_matrix_stool_nares.rds"
-)
+# ... or do you mean nestedness? #<<
+adonis(otu_dist ~ dummy_category / hmpbodysubsite, #<<
+       data = sorted_summary) #<<
 
-otu_matrix %>%
-  t() %>% #TRANSPOSE #<<
-  vegdist(x = ., #<<
-          method = "jaccard", #<<
-          binary = TRUE) %>% #<<
-  as.matrix() %>% #<<
-  str(vec.len=2)
+
 
 ```
 
+]
+
+
+---
+background-image: url(svg/geompoint.svg)
+background-size: 500px
+background-position: 85% 50%
+class: center, middle, inverse
+
+# Regression & Compositional Data?
+
+
+
+---
+
+# Regression & Compositional Data?
+
+.pad-left[
+
+- Compositional data approaches correct OTU dependency:
+
+    - e.g., `compositions::clr()` or `philr::philr()`
+
+    - p >> n challenges persist
+
+- Must pair compositional transform with regularization:
+
+    - `glmnet::glmnet` for LASSO/ridge/elastic net
+
+    - Bayesian methods
 
 ]
 
-.pull-right[
-
-```{r dist15-out, ref.label="dist15", echo=FALSE, message=FALSE, warning=FALSE}
-
-```
-
-
-]
 
 
 ---
