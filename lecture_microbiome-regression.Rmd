@@ -1,5 +1,5 @@
 ---
-title: "Microbiome & Regression:</br>From Diversity to Inference"
+title: "Regression for Microbiome Data:</br>Moving From Diversity to Inference"
 subtitle: "📚EPID 674📚"  
 author: "Brendan J. Kelly, MD, MS"
 date: 'Updated: `r format(Sys.Date(), "%d %B %Y")`'
@@ -47,9 +47,9 @@ style_duo_accent(
 
 ### Review β-diversity
 
-### Linear regression with α-diversity
+### α/β-diversity ⇾ linear regression
 
-### PERMANOVA with β-diversity
+### β-diversity ⇾ PERMANOVA
 
 ### Compositional data?
 
@@ -78,7 +78,7 @@ library(tidyverse)
 
 # TYPICAL OTU TABLE ORIENTATION IN MICROBIOME STUDIES
 
-otu <- read_csv("./data/HMP_OTU_table_longformat.csv.gz")
+otu <- read_csv("./data/HMP_OTU_table_long.csv.gz")
 
 otu %>%
   reshape2::acast(otu_id ~ specimen_id,
@@ -309,13 +309,13 @@ background-size: 500px
 background-position: 85% 50%
 class: center, middle, inverse
 
-# Linear regression with α-diversity
+# Linear regression with α/β-diversity
 
 
 
 ---
 
-# `lm()`
+# Linear Regression with `lm()`
 
 .pull-left[
 
@@ -327,11 +327,19 @@ library(tidyverse)
 # install.packages("vegan")
 library(vegan)
 
-otu_long <- read_csv(
-"./data/HMP_OTU_table_longformat_stool_nares.csv.gz"
+# install.packages("ape")
+library(ape)
+
+set.seed(16) #<<
+
+otu_tab <- read_rds(
+"./data/HMP_OTU_table_matrix_stool_nares.rds"
 )
 
-otu_long
+otu_tab %>%
+  str(vec.len = 3)
+
+
 
 ```
 
@@ -351,7 +359,294 @@ otu_long
 
 ---
 
-# `vegan::vegdist()`
+# Linear Regression with `lm()`
+
+.pull-left[
+
+```{r otu2, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+otu_tab %>%
+  as_tibble(rownames = "otu_id") %>%
+  gather(key = "specimen_id",
+         value = "read_count",
+         -otu_id) %>%
+  distinct() -> otu_long
+
+otu_long
+
+
+```
+
+
+]
+
+.pull-right[
+
+```{r otu2-out, ref.label="otu2", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# Linear Regression with `lm()`
+
+.pull-left[
+
+```{r otu3, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+read_tsv(file = "./data/v13_map_uniquebyPSN.txt.bz2") %>%
+  rename_all(.funs = ~ gsub("#","",tolower(.x))) %>%
+  rename(specimen_id = sampleid) %>%
+  distinct() -> specimen_data
+
+specimen_data %>%
+  group_by(hmpbodysubsite) %>%
+  mutate(dummy_variable_site = #<<
+           rnorm(n = length(hmpbodysubsite), #<<
+                 mean = nchar(unique(hmpbodysubsite)), #<<
+                 sd = 0.5)) %>% #<<
+  ungroup() %>%
+  filter(hmpbodysubsite %in% #<<
+           c("Anterior_nares","Stool")) %>% #<<
+  select(specimen_id,
+         hmpbodysubsite,
+         dummy_variable_site) %>%
+  mutate(specimen_id = as.character(specimen_id)) %>%
+  distinct() -> specimen_data
+
+specimen_data
+
+
+```
+
+
+]
+
+.pull-right[
+
+```{r otu3-out, ref.label="otu3", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# Linear Regression with `lm()`
+
+.pull-left[
+
+```{r otu4, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+specimen_data %>%
+  qplot(data = .,
+        x = dummy_variable_site, #<<
+        fill = hmpbodysubsite, #<<
+        alpha = 0.8,
+        geom = "histogram",
+        position = "identity") +
+  scale_alpha(guide = FALSE) +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+
+
+```
+
+
+]
+
+.pull-right[
+
+```{r otu4-out, ref.label="otu4", echo=FALSE, message=FALSE, warning=FALSE, fig.height=5}
+
+```
+
+
+]
+
+
+
+---
+
+# Linear Regression with `lm()`
+
+.pull-left[
+
+```{r shannon1, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+otu_long %>%
+  group_by(specimen_id) %>%
+  summarise(shannon = diversity(x = read_count, #<<
+                             index = "shannon")) %>% #<<
+  ungroup() %>%
+  left_join(specimen_data, by = "specimen_id") %>%
+  mutate(dummy_variable_shannon = #<<
+           rnorm(n = length(shannon), #<<
+                 mean = 0, #<<
+                 sd = 0.2) +
+           shannon) %>% #<<
+  distinct() -> shannon_summary
+
+shannon_summary
+
+```
+
+
+]
+
+.pull-right[
+
+```{r shannon1-out, ref.label="shannon1", echo=FALSE, message=FALSE, warning=FALSE, fig.height=5}
+
+```
+
+
+]
+
+
+
+---
+
+# Linear Regression with `lm()`
+
+.pull-left[
+
+```{r shannon2, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+shannon_summary %>%
+    qplot(data = .,
+        x = shannon, #<<
+        y = dummy_variable_site, #<<
+        color = hmpbodysubsite, #<<
+        geom = c("point","smooth"),
+        method = "lm") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+
+```
+
+
+]
+
+.pull-right[
+
+```{r shannon2-out, ref.label="shannon2", echo=FALSE, message=FALSE, warning=FALSE, fig.height=5}
+
+```
+
+
+]
+
+
+
+---
+
+# Linear Regression with `lm()`
+
+.pull-left[
+
+```{r shannon2m, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+shannon_summary %>%
+  lm(formula = dummy_variable_site ~ shannon, #<<
+     data = .) %>%
+  summary()
+
+
+```
+
+
+]
+
+.pull-right[
+
+```{r shannon2m-out, ref.label="shannon2m", echo=FALSE, message=FALSE, warning=FALSE, fig.height=5}
+
+```
+
+
+]
+
+
+
+---
+
+# Linear Regression with `lm()`
+
+.pull-left[
+
+```{r shannon3, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+shannon_summary %>%
+    qplot(data = .,
+        x = shannon, #<<
+        y = dummy_variable_shannon, #<<
+        color = hmpbodysubsite, #<<
+        geom = c("point","smooth"),
+        method = "lm") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+
+```
+
+
+]
+
+.pull-right[
+
+```{r shannon3-out, ref.label="shannon3", echo=FALSE, message=FALSE, warning=FALSE, fig.height=5}
+
+```
+
+
+]
+
+
+
+---
+
+# Linear Regression with `lm()`
+
+.pull-left[
+
+```{r shannon3m, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+shannon_summary %>%
+  lm(formula = dummy_variable_shannon ~ shannon, #<<
+     data = .) %>%
+  summary()
+
+
+```
+
+
+]
+
+.pull-right[
+
+```{r shannon3m-out, ref.label="shannon3m", echo=FALSE, message=FALSE, warning=FALSE, fig.height=5}
+
+```
+
+
+]
+
+
+
+---
+
+# Linear Regression with `lm()`
 
 .pull-left[
 
@@ -382,7 +677,7 @@ otu_matrix %>%
 
 ---
 
-# `vegan::vegdist()`
+# Linear Regression with `lm()`
 
 .pull-left[
 
@@ -414,7 +709,7 @@ otu_matrix %>%
 
 ---
 
-# `vegan::vegdist()`
+# Linear Regression with `lm()`
 
 .pull-left[
 
@@ -449,7 +744,7 @@ otu_matrix %>%
 
 ---
 
-# `vegan::vegdist()`
+# Linear Regression with `lm()`
 
 .pull-left[
 
@@ -500,6 +795,180 @@ background-size: contain
 
 
 ---
+
+# PERMANOVA with `adonis()`
+
+.pull-left[
+
+```{r otu11, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+# install.packages("tidyverse") 
+library(tidyverse)
+
+# install.packages("vegan")
+library(vegan)
+
+# install.packages("ape")
+library(ape)
+
+
+otu_tab <- read_rds(
+"./data/HMP_OTU_table_matrix_stool_nares.rds"
+)
+
+otu_tab
+
+
+```
+
+
+]
+
+.pull-right[
+
+```{r otu11-out, ref.label="otu11", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# PERMANOVA with `adonis()`
+
+.pull-left[
+
+```{r dist12, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+otu_matrix <- read_rds(
+  "./data/HMP_OTU_table_matrix_stool_nares.rds"
+)
+
+otu_matrix %>%
+  str(vec.len = 2)
+
+```
+
+
+]
+
+.pull-right[
+
+```{r dist12-out, ref.label="dist12", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# PERMANOVA with `adonis()`
+
+.pull-left[
+
+```{r dist13, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+otu_matrix <- read_rds(
+  "./data/HMP_OTU_table_matrix_stool_nares.rds"
+)
+
+otu_matrix %>%
+  t() %>% # TRANSPOSE #<<
+  str(vec.len = 2)
+
+```
+
+
+]
+
+.pull-right[
+
+```{r dist13-out, ref.label="dist13", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# PERMANOVA with `adonis()`
+
+.pull-left[
+
+```{r dist14, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+otu_matrix <- read_rds(
+  "./data/HMP_OTU_table_matrix_stool_nares.rds"
+)
+
+otu_matrix %>%
+  t() %>% #TRANSPOSE #<<
+  vegdist(x = ., #<<
+          method = "jaccard", #<<
+          binary = TRUE) %>% #<<
+  str(vec.len=2)
+
+```
+
+
+]
+
+.pull-right[
+
+```{r dist14-out, ref.label="dist14", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# PERMANOVA with `adonis()`
+
+.pull-left[
+
+```{r dist15, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+otu_matrix <- read_rds(
+  "./data/HMP_OTU_table_matrix_stool_nares.rds"
+)
+
+otu_matrix %>%
+  t() %>% #TRANSPOSE #<<
+  vegdist(x = ., #<<
+          method = "jaccard", #<<
+          binary = TRUE) %>% #<<
+  as.matrix() %>% #<<
+  str(vec.len=2)
+
+```
+
+
+]
+
+.pull-right[
+
+```{r dist15-out, ref.label="dist15", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+---
 class: center, middle, inverse
 background-image: url(svg/conjugation.svg)
 background-size: 500px
@@ -516,7 +985,7 @@ background-position: 98% 90%
 class: center, middle
 
 # Thank you!
-#### Slides available: [github.com/bjklab](https://github.com/bjklab/EPID674_002_sequences-to-counts.git)
+#### Slides available: [github.com/bjklab](https://github.com/bjklab/https://github.com/bjklab/EPID674_008_microbiome-regression.git)
 #### [brendank@pennmedicine.upenn.edu](brendank@pennmedicine.upenn.edu)
 
 

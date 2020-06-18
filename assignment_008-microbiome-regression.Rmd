@@ -54,7 +54,7 @@ style_duo_accent(
 .pad-left[
 
 - Clone the sixth class repository:  
-  [https://github.com/bjklab/EPID674_006_beta-diversity.git](https://github.com/bjklab/EPID674_006_beta-diversity.git)
+  [https://github.com/bjklab/EPID674_008_microbiome-regression.git](https://github.com/bjklab/EPID674_008_microbiome-regression.git)
 
 - Install & load `tidyverse`, `vegan`, & `ape` packages
 
@@ -382,7 +382,7 @@ background-position: 98% 90%
 class: center, middle
 
 # Thank you!
-#### Slides available: [github.com/bjklab](https://github.com/bjklab/EPID674_006_beta-diversity.git)
+#### Slides available: [github.com/bjklab](https://github.com/bjklab/https://github.com/bjklab/EPID674_008_microbiome-regression.git)
 #### [brendank@pennmedicine.upenn.edu](brendank@pennmedicine.upenn.edu)
 
 
