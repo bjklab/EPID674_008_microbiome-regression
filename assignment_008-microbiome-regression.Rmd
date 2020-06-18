@@ -1,0 +1,390 @@
+---
+title: "Code Exercise"
+subtitle: "HMP Data in RStudio"  
+author: 
+  - "Brendan J. Kelly, MD, MS"
+date: 'Updated: `r format(Sys.Date(), "%d %B %Y")`'
+output:
+  xaringan::moon_reader:
+    seal: FALSE
+    self_contained: TRUE
+    lib_dir: libs
+    css: xaringan-themer-plus.css
+    nature:
+      ratio: 16:9
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+background-image: url(svg/coding.svg)
+background-size: 500px
+background-position: 50% 50%
+class: center, middle, inverse
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE)
+```
+
+```{r xaringan-themer, include=FALSE, warning=FALSE, eval=FALSE}
+library(xaringanthemer)
+style_duo_accent(
+  primary_color = "#011F5B",
+  secondary_color = "#990000",
+  inverse_header_color = "#FFFFFF",
+  header_font_google = google_font("Roboto Condensed"),
+  text_font_google = google_font("Roboto"),
+  code_font_google = google_font("Roboto Mono"),
+  # padding = "64px 64px 64px 64px"
+  # base_font_size = "24px",
+  # text_font_base = "1rem",
+  # header_h1_font_size = "2.75rem",
+  # header_h2_font_size = "2rem",
+  # header_h3_font_size = "1.25rem",
+)
+```
+
+# Assignment 006
+
+
+
+---
+
+# Beta Diversity in R
+
+.pad-left[
+
+- Clone the sixth class repository:  
+  [https://github.com/bjklab/EPID674_006_beta-diversity.git](https://github.com/bjklab/EPID674_006_beta-diversity.git)
+
+- Install & load `tidyverse`, `vegan`, & `ape` packages
+
+- Examine OTUs, distances, and principal coordinates
+
+- Assigment:  
+
+    - Calculate pairwise distances
+    
+    - Plot principal coordinates
+
+]
+
+
+
+---
+background-image: url(img/hmpdacc.png)
+background-size: contain
+
+
+
+---
+background-image: url(img/hmpdacc_otus.png)
+background-size: contain
+
+
+
+---
+background-image: url(img/rstudiocloud_repo.png)
+background-size: contain
+
+
+
+---
+
+# Using the [rstudio.cloud](https://rstudio.cloud) console
+
+.pull-left[
+
+```{r read-otu, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+# make sure packages installed
+# install.packages("tidyverse")
+# install.packages("vegan")
+# install.packages("ape")
+
+# load packages
+library(tidyverse)
+library(vegan)
+library(ape)
+
+# load data 
+otu_long <- read_csv(
+file = 
+"./data/HMP_OTU_table_longformat_stool_nares.csv.gz"
+)
+
+otu_long # show what you've read
+
+```
+
+
+]
+
+.pull-right[
+
+```{r read-otu-out, ref.label="read-otu", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# Using the [rstudio.cloud](https://rstudio.cloud) console
+
+.pull-left[
+
+```{r read-data, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+# load data 
+otu_matrix <- read_rds(
+path = 
+"./data/HMP_OTU_table_matrix_stool_nares.rds"
+)
+
+# microbiome format
+otu_matrix %>%
+  str(vec.len = 2)
+
+# ecology format
+otu_matrix %>%
+  t() %>% # TRANSPOSE #<<
+  str(vec.len = 2)
+  
+  
+```
+
+
+]
+
+.pull-right[
+
+```{r read-data-out, ref.label="read-data", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# Using the [rstudio.cloud](https://rstudio.cloud) console
+
+.pull-left[
+
+```{r read-data1, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+# load data 
+hmp_dm <- read_csv(
+file = 
+"./data/HMP_DM_weighted_unifrac_stool_nares.csv.gz"
+)
+
+hmp_pc <- read_csv(
+file = 
+"./data/HMP_PC_weighted_unifrac_stool_nares.csv.gz"
+)
+
+# long-format distance matrix
+hmp_dm %>%
+  print(n = 4)
+
+# long-format principal coordinates
+hmp_pc %>%
+  print(n = 4)
+  
+  
+```
+
+
+]
+
+.pull-right[
+
+```{r read-data1-out, ref.label="read-data1", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# `vegan::vegdist()`
+
+.pull-left[
+
+```{r distdemo, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+otu_matrix %>%
+  t() %>% #TRANSPOSE #<<
+  vegdist(x = ., #<<
+          method = "jaccard", #<<
+          binary = TRUE) %>% #<<
+  as.matrix() %>% #<<
+  str(vec.len = 2)
+
+```
+
+
+]
+
+.pull-right[
+
+```{r distdemo-out, ref.label="distdemo", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# `ape::pcoa()`
+
+.pull-left[
+
+```{r pcoademo, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+otu_matrix %>%
+  t() %>% #TRANSPOSE 
+  vegdist(x = ., 
+          method = "jaccard", 
+          binary = TRUE) %>% 
+  pcoa() %>% #<<
+  str(vec.len = 2)
+
+```
+
+
+]
+
+.pull-right[
+
+```{r pcoademo-out, ref.label="pcoademo", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# Plot Distances
+
+.pull-left[
+
+```{r distplot, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+hmp_dm %>%
+  mutate(dist_cat =
+           ifelse(site_1 != site_2,
+                  "between",
+                  ifelse(site_1 == "Stool",
+                         "stool",
+                         "nares"))) %>%
+  ggplot(data = .) +
+  geom_histogram(aes(
+    x = weighted_unifrac,
+    fill = dist_cat
+  ), alpha = 0.8,
+  position = "identity") +
+  theme_bw()
+
+
+```
+
+
+]
+
+.pull-right[
+
+```{r distplot-out, ref.label="distplot", echo=FALSE, message=FALSE, warning=FALSE, fig.height=5}
+
+```
+
+
+]
+
+
+
+---
+
+# Plot Principal Coordinates
+
+.pull-left[
+
+```{r pcplot, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+hmp_pc %>%
+  ggplot(data = .) +
+  geom_point(
+    aes(
+    x = PC1,
+    y = PC2,
+    color = HMPbodysubsite
+  ),
+  shape = 21) +
+  theme_bw()
+
+
+```
+
+
+]
+
+.pull-right[
+
+```{r pcplot-out, ref.label="pcplot", echo=FALSE, message=FALSE, warning=FALSE, fig.height=5}
+
+```
+
+
+]
+
+
+
+---
+
+# Questions
+
+.pad-left[
+
+- What is the relationship between PERMANOVA testing and the distance matrix (look at slide #11)?
+
+- Does PCoA show the relationship between specimens (communities) or between OTUs?
+
+]
+
+
+---
+background-image: url(svg/coding.svg)
+background-size: 500px
+background-position: 50% 50%
+class: center, middle, inverse
+
+# Done!
+### Post questions to the discussion board!
+
+
+
+---
+background-image: url(svg/bacteria.svg)
+background-size: 100px
+background-position: 98% 90%
+class: center, middle
+
+# Thank you!
+#### Slides available: [github.com/bjklab](https://github.com/bjklab/EPID674_006_beta-diversity.git)
+#### [brendank@pennmedicine.upenn.edu](brendank@pennmedicine.upenn.edu)
+
+
+
+

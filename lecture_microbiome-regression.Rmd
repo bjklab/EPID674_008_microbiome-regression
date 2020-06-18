@@ -1,0 +1,524 @@
+---
+title: "Microbiome & Regression:</br>From Diversity to Inference"
+subtitle: "📚EPID 674📚"  
+author: "Brendan J. Kelly, MD, MS"
+date: 'Updated: `r format(Sys.Date(), "%d %B %Y")`'
+output:
+  xaringan::moon_reader:
+    self_contained: TRUE
+    lib_dir: libs
+    css: xaringan-themer-plus.css
+    nature:
+      ratio: 16:9
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+background-image: url(svg/geompoint.svg)
+background-size: 500px
+background-position: 85% 50%
+class: middle, inverse
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE)
+```
+
+```{r xaringan-themer, include=FALSE, warning=FALSE, eval=FALSE}
+library(xaringanthemer)
+style_duo_accent(
+  primary_color = "#011F5B",
+  secondary_color = "#990000",
+  inverse_header_color = "#FFFFFF",
+  header_font_google = google_font("Roboto Condensed"),
+  text_font_google = google_font("Roboto"),
+  code_font_google = google_font("Roboto Mono"),
+  # padding = "64px 64px 64px 64px"
+  # base_font_size = "24px",
+  # text_font_base = "1rem",
+  # header_h1_font_size = "2.75rem",
+  # header_h2_font_size = "2rem",
+  # header_h3_font_size = "1.25rem",
+)
+```
+
+.pad-left[
+
+### Review α-diversity
+
+### Review β-diversity
+
+### Linear regression with α-diversity
+
+### PERMANOVA with β-diversity
+
+### Compositional data?
+
+]
+
+
+
+---
+background-image: url(svg/geompoint.svg)
+background-size: 500px
+background-position: 85% 50%
+class: center, middle, inverse
+
+# α-diversity
+
+
+---
+
+# High Dimensional Microbiome Data
+
+.center[
+
+```{r otu_table, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE}
+
+library(tidyverse)
+
+# TYPICAL OTU TABLE ORIENTATION IN MICROBIOME STUDIES
+
+otu <- read_csv("./data/HMP_OTU_table_longformat.csv.gz")
+
+otu %>%
+  reshape2::acast(otu_id ~ specimen_id,
+                  # rows = otu_id, columns = specimen_id
+                  value.var = "read_count") %>%
+     .[1:16,1:6]
+
+# 43140 ROWS & 32 COLUMNS
+
+
+```
+
+]
+
+
+
+---
+
+# High Dimensional Microbiome Data
+
+.pad-left[
+
+- How to deal with high-dimensional microbiome data?
+
+- __Descriptive (e.g., heatmaps and stacked barplots)__
+    
+- Test a priori hypotheses regarding specific OTUs/taxa
+
+- Reduce dimensions:
+
+    - single summary statistic (alpha diversity)
+    
+    - pairwise distances (beta diversity) with PCoA or PERMANOVA
+    
+    - community types (mixture modeling)
+
+
+]
+
+
+
+
+---
+background-image: url(img/hmp_heatmap.png)
+background-size: contain
+
+
+
+---
+
+# High Dimensional Microbiome Data
+
+.pad-left[
+
+- How to deal with high-dimensional microbiome data?
+
+- Descriptive (e.g., heatmaps and stacked barplots)
+    
+- Test a priori hypotheses regarding specific OTUs/taxa
+
+- __Reduce dimensions:__
+
+    - __single summary statistic (alpha diversity)__
+    
+    - pairwise distances (beta diversity) with PCoA or PERMANOVA
+    
+    - community types (mixture modeling)
+
+
+]
+
+
+
+---
+
+# Shannon Diversity
+
+.pad-left[
+
+- __Richness__ & __evenness__
+
+- Shannon diversity:
+
+    $$H' = - \sum{ p_{i} * \log_{b}{(p_{i})} }$$
+    
+- "The uncertainty contained in a probability distribution is the average log-probability of an event." (McElreath _Statistical Rethinking, 2nd_ 2020)
+
+]
+
+
+
+---
+background-image: url(img/hmp_shannon.png)
+background-size: contain
+
+
+
+
+---
+background-image: url(svg/geompoint.svg)
+background-size: 500px
+background-position: 85% 50%
+class: center, middle, inverse
+
+# β-diversity
+
+
+---
+
+# High Dimensional Microbiome Data
+
+.pad-left[
+
+- How to deal with high-dimensional microbiome data?
+
+- Descriptive (e.g., heatmaps and stacked barplots)
+    
+- Test a priori hypotheses regarding specific OTUs/taxa
+
+- __Reduce dimensions:__
+
+    - single summary statistic (alpha diversity)
+    
+    - __pairwise distances (beta diversity) with PCoA or PERMANOVA__
+    
+    - community types (mixture modeling)
+
+
+]
+
+
+---
+
+# Beta Diversity as Dimension Reduction
+
+.pad-left[
+
+- Summarize each sample’s relationship to other samples:  
+
+    - pairwise distances
+    
+    - OTU table → square matrix
+    
+- Many beta diversity metrics:  
+
+    - just counts versus counts + phylogeny
+    
+    - weighted versus unweighted
+    
+]
+
+
+
+---
+background-image: url(img/legendre_otu_to_dm.png)
+background-size: contain
+
+
+
+
+---
+
+# Distance Metrics for Beta Diversity
+
+.pad-left[
+
+- Just counts versus counts + phylogeny:
+
+    - Jaccard: $J(A,B) = \frac{A∩B}{A∪B}$  &  $d_{J}(A,B) = 1 - J(A,B)$
+
+    - UniFrac: fraction of unique branch length in tree
+
+- Weighted versus unweighted:
+
+    - weighted: counts matter
+
+    - unweighted: binary (presence-absence)
+
+]
+
+
+
+---
+
+# Pairwise Distances ⇾ PCoA
+
+.pad-left[
+
+- PCoA: principal coordinate analysis
+
+    - any metric distance, even if non-Euclidean
+    
+    - like PCA, eigenvalue decomposition (maximum variance) but mediated by distance function (no original descriptors)
+
+    - unlike PCA, does not allow projection of original descriptors in reduced-dimension space
+
+
+]
+
+
+---
+background-image: url(img/weighted_unifrac.png)
+background-size: contain
+
+
+
+---
+background-image: url(img/within_vs_between_group.png)
+background-size: contain
+
+
+
+---
+background-image: url(img/anderson_adonis.png)
+background-size: contain
+
+
+
+---
+background-image: url(img/kelly_bioinformatics_highlight.png)
+background-size: contain
+
+
+
+---
+background-image: url(svg/geompoint.svg)
+background-size: 500px
+background-position: 85% 50%
+class: center, middle, inverse
+
+# Linear regression with α-diversity
+
+
+
+---
+
+# `lm()`
+
+.pull-left[
+
+```{r otu1, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+# install.packages("tidyverse") 
+library(tidyverse)
+
+# install.packages("vegan")
+library(vegan)
+
+otu_long <- read_csv(
+"./data/HMP_OTU_table_longformat_stool_nares.csv.gz"
+)
+
+otu_long
+
+```
+
+
+]
+
+.pull-right[
+
+```{r otu1-out, ref.label="otu1", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# `vegan::vegdist()`
+
+.pull-left[
+
+```{r dist2, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+otu_matrix <- read_rds(
+  "./data/HMP_OTU_table_matrix_stool_nares.rds"
+)
+
+otu_matrix %>%
+  str(vec.len = 2)
+
+```
+
+
+]
+
+.pull-right[
+
+```{r dist2-out, ref.label="dist2", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# `vegan::vegdist()`
+
+.pull-left[
+
+```{r dist3, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+otu_matrix <- read_rds(
+  "./data/HMP_OTU_table_matrix_stool_nares.rds"
+)
+
+otu_matrix %>%
+  t() %>% # TRANSPOSE #<<
+  str(vec.len = 2)
+
+```
+
+
+]
+
+.pull-right[
+
+```{r dist3-out, ref.label="dist3", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# `vegan::vegdist()`
+
+.pull-left[
+
+```{r dist4, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+otu_matrix <- read_rds(
+  "./data/HMP_OTU_table_matrix_stool_nares.rds"
+)
+
+otu_matrix %>%
+  t() %>% #TRANSPOSE #<<
+  vegdist(x = ., #<<
+          method = "jaccard", #<<
+          binary = TRUE) %>% #<<
+  str(vec.len=2)
+
+```
+
+
+]
+
+.pull-right[
+
+```{r dist4-out, ref.label="dist4", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# `vegan::vegdist()`
+
+.pull-left[
+
+```{r dist5, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+otu_matrix <- read_rds(
+  "./data/HMP_OTU_table_matrix_stool_nares.rds"
+)
+
+otu_matrix %>%
+  t() %>% #TRANSPOSE #<<
+  vegdist(x = ., #<<
+          method = "jaccard", #<<
+          binary = TRUE) %>% #<<
+  as.matrix() %>% #<<
+  str(vec.len=2)
+
+```
+
+
+]
+
+.pull-right[
+
+```{r dist5-out, ref.label="dist5", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+background-image: url(svg/geompoint.svg)
+background-size: 500px
+background-position: 85% 50%
+class: center, middle, inverse
+
+# PERMANOVA with β-diversity
+
+
+
+---
+background-image: url(img/legendre_otu_to_dm.png)
+background-size: contain
+
+
+
+---
+class: center, middle, inverse
+background-image: url(svg/conjugation.svg)
+background-size: 500px
+background-position: 85% 50%
+
+# Questions?
+### Post to the discussion board!
+
+
+---
+background-image: url(svg/bacteria.svg)
+background-size: 100px
+background-position: 98% 90%
+class: center, middle
+
+# Thank you!
+#### Slides available: [github.com/bjklab](https://github.com/bjklab/EPID674_002_sequences-to-counts.git)
+#### [brendank@pennmedicine.upenn.edu](brendank@pennmedicine.upenn.edu)
+
+
+
+
