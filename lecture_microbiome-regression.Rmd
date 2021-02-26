@@ -2,7 +2,7 @@
 title: "Regression for Microbiome Data:</br>Moving From Diversity to Inference"
 subtitle: "📚EPID 674📚"  
 author: "Brendan J. Kelly, MD, MS"
-date: 'Updated: `r format(Sys.Date(), "%d %B %Y")`'
+date: 'Updated: 18 June 2020' #`r format(Sys.Date(), "%d %B %Y")`
 output:
   xaringan::moon_reader:
     self_contained: TRUE
@@ -21,6 +21,14 @@ class: middle, inverse
 
 ```{r setup, include=FALSE}
 options(htmltools.dir.version = FALSE)
+```
+
+```{r xaringan-tile-view, echo=FALSE}
+xaringanExtra::use_tile_view()
+xaringanExtra::use_webcam()
+xaringanExtra::use_tachyons()
+xaringanExtra::use_animate_css()
+xaringanExtra::use_share_again()
 ```
 
 ```{r xaringan-themer, include=FALSE, warning=FALSE, eval=FALSE}
